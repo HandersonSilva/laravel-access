@@ -1,0 +1,35 @@
+{
+    "name": "handersonsilva/laravel-access",
+    "description": "Permite acesso a aplicação com base na verificação de email",
+    "type": "project",
+    "license": "MIT",
+    "minimum-stability": "dev",
+    "authors": [
+        {
+            "name": "Handerson Silva",
+            "email": "handersonsylva@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "ext-openssl": "*",
+        "ext-zlib": "*"
+    },
+    "require-dev": {
+        "../../vendor/laravel/framework": "^v10.48.24",
+        "orchestra/testbench": "v8.28.0",
+        "../../vendor/phpunit/phpunit": "^10.5.38"
+    },
+    "autoload": {
+        "psr-4": {
+            "SecurityTools\\LaravelAccess\\": "src/app/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "SecurityTools\\LaravelAccess\\Providers\\AccessServiceProvider"
+            ]
+        }
+    }
+}
