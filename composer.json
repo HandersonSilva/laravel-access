@@ -4,6 +4,7 @@
     "type": "project",
     "license": "MIT",
     "minimum-stability": "stable",
+    "version": "1.0.1",
     "authors": [
         {
             "name": "Handerson Silva",
