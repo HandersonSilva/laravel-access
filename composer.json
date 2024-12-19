@@ -3,7 +3,7 @@
     "description": "Permite acesso a aplicação com base na verificação de email",
     "type": "project",
     "license": "MIT",
-    "minimum-stability": "dev-main",
+    "minimum-stability": "stable",
     "authors": [
         {
             "name": "Handerson Silva",
