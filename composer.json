@@ -18,7 +18,7 @@
     "require-dev": {
         "laravel/framework": "^v10.48.24",
         "orchestra/testbench": "v8.28.0",
-        "phpunit": "^10.5.38"
+        "phpunit/phpunit": "^10.5.35"
     },
     "autoload": {
         "psr-4": {
