@@ -16,9 +16,9 @@
         "ext-zlib": "*"
     },
     "require-dev": {
-        "../../vendor/laravel/framework": "^v10.48.24",
+        "laravel/framework": "^v10.48.24",
         "orchestra/testbench": "v8.28.0",
-        "../../vendor/phpunit/phpunit": "^10.5.38"
+        "phpunit": "^10.5.38"
     },
     "autoload": {
         "psr-4": {
