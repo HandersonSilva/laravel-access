@@ -15,6 +15,11 @@ class AccessService
     use NonceTrait;
 
     /**
+     * Route access
+     */
+    const DEFAULT_ROUTE_ACCESS = 'access.index';
+
+    /**
      * Model check user
      */
     private $model;
@@ -32,7 +37,12 @@ class AccessService
     /**
      * Expiration time code
      */
-    private int $expires;
+    private int $expiresCode;
+
+    /**
+     * Expiration time session
+     */
+    private int $expiresSession;
 
     /**
      * Redirect prefix
@@ -79,7 +89,8 @@ class AccessService
         $this->model = config('access.auth.user.model');
         $this->email = config('access.auth.user.email');
         $this->id = config('access.auth.user.id');
-        $this->expires = config('access.auth.code.expires');
+        $this->expiresCode = config('access.auth.code.expires');
+        $this->expiresSession = config('access.auth.session.expires');
         $this->errorMessage = config('access.messages.invalid_code');
         $this->redirectPrefix = config('access.redirect_prefix');
         $this->enable = config('access.enable');
@@ -96,6 +107,7 @@ class AccessService
         $isAuthenticated = $this->accessSessionAdapter->isAuthenticated();
         $isBlockEnv = in_array(config('app.env'), config('access.block_env'));
         $isBlockPrefix = $this->isBlockedByPrefix($request);
+        $prefix = $this->getPrefix($request);
 
         if (!$this->enable) {
             return false;
@@ -103,6 +115,10 @@ class AccessService
 
         if (($isBlockPrefix && $isBlockEnv) && !$isAuthenticated) {
             return true;
+        }
+
+        if ($this->prefixAccess === $prefix) {
+            $this->logout(null);
         }
 
         return false;
@@ -132,7 +148,6 @@ class AccessService
      */
     public function getRedirectPrefix(): ?string
     {
-
         if ($this->enable && !$this->redirectPrefix) {
             throw new \Exception('Redirect prefix not found');
         }
@@ -153,7 +168,7 @@ class AccessService
         try {
             $user = $this->getUser($email);
 
-            $expires = $user ? $this->expires : 0;
+            $expires = $user ? $this->expiresCode : 0;
 
             $nonce = $this->generateNonce($formId, 25, $expires);
 
@@ -199,6 +214,15 @@ class AccessService
     }
 
     /**
+     * Delete key auth cache
+     */
+    public function deleteKeyAuthCache(string $formId, string $nonce): void {
+        $key = $this->getKeyAuthCache($formId, $nonce);
+
+        Cache::forget($key);
+    }
+
+    /**
      * Get prefix
      */
     public function getPrefix(Request $request): string
@@ -225,13 +249,15 @@ class AccessService
                 throw new \Exception('Invalid code');
             }
 
-            $this->accessSessionAdapter->setAccess($this->expires, $nonce, $this->model, $this->id);
+            $this->accessSessionAdapter->setAccess($this->expiresSession, $nonce, $this->model, $this->id);
         } catch (\Exception $e) {
             \Log::error('Error validate code', [
                 'message' => $e->getMessage()
             ]);
             $this->logout($nonce);
             throw new \Exception($this->errorMessage);
+        } finally {
+            $this->deleteKeyAuthCache($formId, $nonce);
         }
     }
 

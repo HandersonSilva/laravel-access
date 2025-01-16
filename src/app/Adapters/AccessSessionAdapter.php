@@ -33,6 +33,9 @@ class AccessSessionAdapter extends AccessSessionAbstract
                 'nonce' => $nonce,
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
+                'last_activity' => null,
+                'access_cookie' => null,
+                'expires_at' => null,
             ]
         );
     }
