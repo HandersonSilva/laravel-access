@@ -8,8 +8,6 @@ use Illuminate\Http\Request;
 
 class AccessMiddleware
 {
-    const DEFAULT_ROUTE_PREFIX = '/access';
-
     public function __construct(private readonly AccessService $accessService)
     {
     }
@@ -19,15 +17,8 @@ class AccessMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        $isBlocked = $this->accessService->isBlocked($request);
-        $prefix = $this->accessService->getPrefix($request);
-
-        if (self::DEFAULT_ROUTE_PREFIX === $prefix && !$isBlocked) {
-            $this->accessService->logout(null);
-        }
-
-        if ($isBlocked) {
-            return redirect()->route('access.index');
+        if ($this->accessService->isBlocked($request)) {
+            return redirect()->route($this->accessService::DEFAULT_ROUTE_ACCESS);
         }
 
         return $next($request);
