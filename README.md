@@ -29,6 +29,16 @@ composer require handersonsilva/laravel-access
 ```shell
 php artisan vendor:publish --provider="SecurityTools\LaravelAccess\Providers\AccessServiceProvider"
 ```
+
+### Middleware
+#### Add the following code to the app/Http/Kernel.php file on the global middleware
+```php
+protected $middleware = [
+        \SecurityTools\LaravelAccess\Middleware\AccessMiddleware::class,
+        ...
+];
+```
+
 ### Run the initial configuration
 ```shell
 php artisan access:install
