@@ -2,6 +2,8 @@
 
 namespace SecurityTools\LaravelAccess\Providers;
 
+use Illuminate\Support\Facades\Artisan;
+use SecurityTools\LaravelAccess\Console\Commands\AccessCommand;
 use Illuminate\Support\ServiceProvider;
 
 class AccessServiceProvider extends ServiceProvider
@@ -18,10 +20,6 @@ class AccessServiceProvider extends ServiceProvider
         ], 'access-config');
 
         $this->publishes([
-            __DIR__.'/../../database/migrations/' => database_path('migrations')
-        ], 'access-migrations');
-
-        $this->publishes([
             __DIR__.'/../../public' => public_path('vendor/laravel-access/public'),
         ], 'access-public');
 
@@ -30,5 +28,21 @@ class AccessServiceProvider extends ServiceProvider
         ], 'access-views');
 
         $this->loadRoutesFrom(__DIR__.'/../../routes/access.php');
+
+        $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
+
+        $this->configureCommands();
+    }
+
+    /**
+     * Configure the commands offered by your application.
+     */
+    public function configureCommands(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                AccessCommand::class,
+            ]);
+        }
     }
 }
