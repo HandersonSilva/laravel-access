@@ -132,7 +132,6 @@ class AccessService
      */
     public function getRedirectPrefix(): ?string
     {
-
         if ($this->enable && !$this->redirectPrefix) {
             throw new \Exception('Redirect prefix not found');
         }

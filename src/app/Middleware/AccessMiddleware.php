@@ -19,11 +19,6 @@ class AccessMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        \Log::info('AccessMiddleware', [
-            'cookie' => request()->cookie('_ac_ck'),
-            'prefix' => $this->accessService->getPrefix($request),
-        ]);
-
         $isBlocked = $this->accessService->isBlocked($request);
         $prefix = $this->accessService->getPrefix($request);
 
