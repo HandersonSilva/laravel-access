@@ -32,6 +32,7 @@ return [
     */
 
     'rate_limit' => [
+        'max_attempts_page' => 20,
         'max_attempts' => 5,
         'decay' => 60 * 10,
     ],

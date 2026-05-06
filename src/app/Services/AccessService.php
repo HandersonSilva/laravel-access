@@ -2,6 +2,7 @@
 
 namespace SecurityTools\LaravelAccess\Services;
 
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\RateLimiter;
 use SecurityTools\LaravelAccess\Adapters\AccessSessionAdapter;
 use SecurityTools\LaravelAccess\Mail\SendCodeMail;
@@ -9,6 +10,7 @@ use SecurityTools\LaravelAccess\Traits\NonceTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 class AccessService
 {
@@ -74,7 +76,15 @@ class AccessService
      */
     private string $errorMessage;
 
+    /**
+     * Max attempts
+     */
     private string $maxAttempts;
+
+    /**
+     * Max attempts page
+     */
+    private string $maxAttemptsPage;
 
     public function __construct(protected readonly AccessSessionAdapter $accessSessionAdapter)
     {
@@ -97,10 +107,12 @@ class AccessService
         $this->blockPrefixes = config('access.block_prefixes');
         $this->excludePrefixes = config('access.exclude_prefixes');
         $this->maxAttempts = config('access.rate_limit.max_attempts');
+        $this->maxAttemptsPage = config('access.rate_limit.max_attempts_page');
     }
 
     /**
      * Block access
+     * @throws \Exception
      */
     public function isBlocked(Request $request): bool
     {
@@ -118,6 +130,7 @@ class AccessService
         }
 
         if ($this->prefixAccess === $prefix) {
+            $this->checkRateLimit(true);
             $this->logout(null);
         }
 
@@ -302,13 +315,18 @@ class AccessService
      * Private rate limit
      * @throws \Exception
      */
-    private function checkRateLimit(): void {
+    private function checkRateLimit(bool $isPage): void {
         $ip = request()->ip();
         $key = 'access_rate_limit_' . $ip;
         $decay = config('access.rate_limit.decay');
+        $attempt = $isPage ? $this->maxAttemptsPage : $this->maxAttempts;
 
-        if (RateLimiter::tooManyAttempts($key, $this->maxAttempts)) {
-            throw new \Exception(config('access.messages.too_many_requests'));
+        if (RateLimiter::tooManyAttempts($key, $attempt)) {
+            if ($isPage) {
+                abort(ResponseAlias::HTTP_TOO_MANY_REQUESTS);
+            }
+
+            throw new \Exception(config('access.messages.too_many_requests'), ResponseAlias::HTTP_TOO_MANY_REQUESTS);
         }
 
         RateLimiter::increment($key, $decay);
