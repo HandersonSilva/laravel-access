@@ -79,12 +79,12 @@ class AccessService
     /**
      * Max attempts
      */
-    private string $maxAttempts;
+    private int $maxAttempts;
 
     /**
      * Max attempts page
      */
-    private string $maxAttemptsPage;
+    private int $maxAttemptsPage;
 
     public function __construct(protected readonly AccessSessionAdapter $accessSessionAdapter)
     {
@@ -106,8 +106,8 @@ class AccessService
         $this->enable = config('access.enable');
         $this->blockPrefixes = $this->normalizePrefixes((array) config('access.block_prefixes', []));
         $this->excludePrefixes = $this->normalizePrefixes((array) config('access.exclude_prefixes', []));
-        $this->maxAttempts = config('access.rate_limit.max_attempts');
-        $this->maxAttemptsPage = config('access.rate_limit.max_attempts_page');
+        $this->maxAttempts = (int) config('access.rate_limit.max_attempts', 5);
+        $this->maxAttemptsPage = (int) config('access.rate_limit.max_attempts_page', $this->maxAttempts);
     }
 
     /**
@@ -343,7 +343,7 @@ class AccessService
      * Private rate limit
      * @throws \Exception
      */
-    private function checkRateLimit(bool $isPage): void {
+    private function checkRateLimit(bool $isPage = false): void {
         $ip = request()->ip();
         $key = 'access_rate_limit_' . $ip;
         $decay = config('access.rate_limit.decay');
