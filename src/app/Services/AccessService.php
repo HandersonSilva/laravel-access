@@ -104,8 +104,8 @@ class AccessService
         $this->errorMessage = config('access.messages.invalid_code');
         $this->redirectPrefix = config('access.redirect_prefix');
         $this->enable = config('access.enable');
-        $this->blockPrefixes = config('access.block_prefixes');
-        $this->excludePrefixes = config('access.exclude_prefixes');
+        $this->blockPrefixes = $this->normalizePrefixes((array) config('access.block_prefixes', []));
+        $this->excludePrefixes = $this->normalizePrefixes((array) config('access.exclude_prefixes', []));
         $this->maxAttempts = config('access.rate_limit.max_attempts');
         $this->maxAttemptsPage = config('access.rate_limit.max_attempts_page');
     }
@@ -119,7 +119,7 @@ class AccessService
         $isAuthenticated = $this->accessSessionAdapter->isAuthenticated();
         $isBlockEnv = in_array(config('app.env'), config('access.block_env'));
         $isBlockPrefix = $this->isBlockedByPrefix($request);
-        $prefix = $this->getPrefix($request);
+        $prefix = $this->normalizePrefix($this->getPrefix($request));
 
         if (!$this->enable) {
             return false;
@@ -129,7 +129,7 @@ class AccessService
             return true;
         }
 
-        if ($this->prefixAccess === $prefix) {
+        if ($this->normalizePrefix($this->prefixAccess) === $prefix) {
             $this->checkRateLimit(true);
             $this->logout(null);
         }
@@ -142,17 +142,17 @@ class AccessService
      */
     private function isBlockedByPrefix(Request $request): bool
     {
-        $prefix = $this->getPrefix($request);
+        $prefix = $this->normalizePrefix($this->getPrefix($request));
 
-        if(in_array($prefix, $this->excludePrefixes)) {
+        if(in_array($prefix, $this->excludePrefixes, true)) {
             return false;
         }
 
-        if (empty($this->blockPrefixes) && $prefix !== $this->prefixAccess) {
+        if (empty($this->blockPrefixes) && $prefix !== $this->normalizePrefix($this->prefixAccess)) {
             return true;
         }
 
-        return in_array($prefix, $this->blockPrefixes);
+        return in_array($prefix, $this->blockPrefixes, true);
     }
 
     /**
@@ -241,6 +241,34 @@ class AccessService
     public function getPrefix(Request $request): string
     {
         return $request->route()?->getPrefix() ?? '/' . explode('/', $request->path())[0];
+    }
+
+    /**
+     * Normalize a prefix to a comparable value.
+     */
+    private function normalizePrefix(string $prefix): string
+    {
+        $normalized = trim($prefix);
+
+        if ($normalized === '' || $normalized === '/') {
+            return '/';
+        }
+
+        return trim($normalized, '/');
+    }
+
+    /**
+     * Normalize configured prefixes list.
+     *
+     * @param array<int, string> $prefixes
+     * @return array<int, string>
+     */
+    private function normalizePrefixes(array $prefixes): array
+    {
+        return array_map(
+            fn (string $prefix): string => $this->normalizePrefix($prefix),
+            $prefixes
+        );
     }
 
     /**
