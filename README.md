@@ -39,6 +39,74 @@ protected $middleware = [
 ];
 ```
 
+#### Laravel 11+ (bootstrap/app.php)
+If your app uses the new Laravel bootstrap middleware configuration, register `AccessMiddleware` in `bootstrap/app.php`:
+```php
+->withMiddleware(function (Middleware $middleware): void {
+    $middleware->web(append: [
+        \SecurityTools\LaravelAccess\Middleware\AccessMiddleware::class,
+    ]);
+})
+```
+
+## Laravel + React (Inertia) stack
+If your project uses Laravel with React and Inertia, requests sent with `X-Inertia` should use a full-page redirect when access is blocked.  
+Add a middleware like `HandleInertiaAccessRedirect` and register it **before** `AccessMiddleware`.
+
+### 1) Create the middleware
+```php
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use SecurityTools\LaravelAccess\Services\AccessService;
+use Symfony\Component\HttpFoundation\Response;
+
+class HandleInertiaAccessRedirect
+{
+    public function __construct(private readonly AccessService $accessService)
+    {
+    }
+
+    /**
+     * Ensure Inertia requests trigger a full-page redirect when access is blocked.
+     *
+     * @param  Closure(Request): Response  $next
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        if ($request->header('X-Inertia') && $this->accessService->isBlocked($request)) {
+            return Inertia::location(route(AccessService::DEFAULT_ROUTE_ACCESS));
+        }
+
+        return $next($request);
+    }
+}
+```
+
+### 2) Register in bootstrap/app.php
+```php
+->withMiddleware(function (Middleware $middleware): void {
+    $middleware->web(append: [
+        \App\Http\Middleware\HandleInertiaAccessRedirect::class,
+        \SecurityTools\LaravelAccess\Middleware\AccessMiddleware::class,
+    ]);
+})
+```
+
+### 3) Cookie encryption compatibility
+This package manages the access cookie `_ac_ck` directly.  
+In the host app, exclude this cookie from Laravel cookie encryption:
+
+```php
+$middleware->encryptCookies(except: [
+    '_ac_ck',
+]);
+```
+
 ### Run the initial configuration
 ```shell
 php artisan access:install

@@ -20,6 +20,8 @@ class AccessSessionAdapter extends AccessSessionAbstract
 
     /**
      * Create access session
+     * @param $userId
+     * @param $nonce
      * @return void
      */
     public function createAccessSession($userId, $nonce): void
@@ -64,7 +66,17 @@ class AccessSessionAdapter extends AccessSessionAbstract
 
         $encryptCookie = $this->encrypt($accessSession->access_cookie);
 
-        setcookie(self::COOKIE_NAME, $encryptCookie, $this->getExpires(), '/');
+        Cookie::queue(Cookie::make(
+            name: self::COOKIE_NAME,
+            value: $encryptCookie,
+            minutes: (int) ceil($sessionExpires / 60),
+            path: '/',
+            domain: config('session.domain'),
+            secure: (bool) config('session.secure'),
+            httpOnly: true,
+            raw: false,
+            sameSite: (string) config('session.same_site', 'lax'),
+        ));
 
         $cookieKey = $this->getKey($accessSession->access_cookie);
 
@@ -135,15 +147,21 @@ class AccessSessionAdapter extends AccessSessionAbstract
     }
 
     /**
+     * @param null $nonce
      * @return void
+     * @throws \Exception
      */
     public function logout($nonce = null): void
     {
         if (Cookie::has(self::COOKIE_NAME)) {
-            $cookieValue = Cookie::get(self::COOKIE_NAME);
-            $cookieKey = self::COOKIE_NAME . ":" . $this->getKey($cookieValue);
+            $encryptCookie = Cookie::get(self::COOKIE_NAME);
+            $cookieValue = $this->decrypt($encryptCookie);
 
-            Cache::forget($cookieKey);
+            if ($cookieValue !== false) {
+                $cookieKey = self::COOKIE_NAME . ":" . $this->getKey($cookieValue);
+                Cache::forget($cookieKey);
+            }
+
             Cookie::queue(Cookie::forget(self::COOKIE_NAME));
         }
 
