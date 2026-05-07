@@ -4,10 +4,10 @@ namespace SecurityTools\LaravelAccess\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use SecurityTools\LaravelAccess\Services\AccessService;
 use Symfony\Component\HttpFoundation\Response;
-use function App\Http\Middleware\route;
 
 class HandleInertiaAccessRedirect
 {
@@ -21,7 +21,7 @@ class HandleInertiaAccessRedirect
     public function handle(Request $request, Closure $next): Response
     {
         if ($request->header('X-Inertia') && $this->accessService->isBlocked($request)) {
-            return Inertia::location(route(AccessService::DEFAULT_ROUTE_ACCESS));
+            return Inertia::location(URL::route(AccessService::DEFAULT_ROUTE_ACCESS));
         }
 
         return $next($request);
